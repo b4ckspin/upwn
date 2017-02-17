@@ -22,7 +22,7 @@ next version:
 - Save which APs were tried, key (if found), state (which keys have we tried already? Leave them out)
 - Add commandline support including minimal output (generated keys, key found/not found, maybe some more info)
 - some better coding :P
-- better README
+- better README (add credits, sources to repo)
 
 
 Bugs:
