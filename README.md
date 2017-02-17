@@ -24,3 +24,14 @@ next version:
 - some better coding :P
 - better README
 
+
+Bugs:
+
+- upwn could report a false positive key (first key usually). This is because you networkmanager auto connected to a previously known wifi.
+-- delete this connection and restart upwn.
+- The test output when trying keys has a counting error when testing UBEE key + others.
+-- wait for next version
+- unexpected user input may crash upwn.
+-- wait for the next version
+- No Wifi found
+-- Restart your wifi interface or reconnect usb dongle
