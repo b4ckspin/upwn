@@ -3,7 +3,7 @@ UPC/UBEE router default Wifi password generator and tester
 based on work from yolosec, haxxin, .. 
 
 ## Demo:
-![upwn usage](https://github.com/b4ckspin/upwn/blob/master/markdown/tty.gif "upwn usage")
+![upwn usage](https://github.com/b4ckspin/upwn/blob/master/gif/tty.gif "upwn usage")
 
 ## Python:
 Upwn is written in Python 2.7.6
