@@ -27,7 +27,6 @@ class Upwn(object):
     """
     @staticmethod
     def menu():
-        signal.signal(signal.SIGINT, Upwn.signal_handler)
         isubee = 0
 
         Upwn.checkroot()
@@ -439,4 +438,5 @@ class Upwn(object):
         exit(0)
 
 if __name__ == "__main__":
+    signal.signal(signal.SIGINT, Upwn.signal_handler)
     Upwn.menu()
