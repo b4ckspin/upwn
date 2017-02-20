@@ -34,7 +34,7 @@ $ sudo python upwn.py
     * admin :: admin
 
 ### bugs
-- upwn could report a false positive key (first key usually). This is because you networkmanager auto connected to a previously known wifi.
+- upwn could report a false positive key (first key usually). This is because the networkmanager auto connected to a previously known wifi.
   * delete this connection and restart upwn.
 - The test output when trying keys has a counting error when testing UBEE key + others.
   * Wait for next version
@@ -48,7 +48,7 @@ $ sudo python upwn.py
 - Add commandline support including minimal output (generated keys, key found/not found, maybe some more info)
 
 ## License:
-This project is licensed under the ??? License - see the [LICENSE.md](LICENSE.md) file for details
+This project is licensed under the ??? License 
 
 ## Acknowledgments:
 * haxxin, deadcode, ...
