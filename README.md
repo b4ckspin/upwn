@@ -1,7 +1,7 @@
 # upwn
 UPC/UBEE pwn tool
 
-![upwn usage](https://github.com/b4ckspin/upwn/markdown/tty.gif "upwn usage")
+![upwn usage](https://github.com/b4ckspin/upwn/blob/master/markdown/tty.gif "upwn usage")
 
 Features
 
