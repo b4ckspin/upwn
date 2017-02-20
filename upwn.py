@@ -5,8 +5,8 @@ import re
 import os
 import sys
 import time
+import signal
 
-HEADER = '\033[95m'
 OKGREEN = '\033[92m'
 WARNING = '\033[93m'
 FAIL = '\033[91m'
@@ -27,6 +27,7 @@ class Upwn(object):
     """
     @staticmethod
     def menu():
+        signal.signal(signal.SIGINT, Upwn.signal_handler)
         isubee = 0
 
         Upwn.checkroot()
@@ -120,18 +121,19 @@ class Upwn(object):
                 print '[' + str(i) + ']  ' + str(item)
                 i += 1
 
-        response = raw_input(WARNING + "\nselect interface: " + ENDC)
+        while True:
+            try:
+                response = raw_input(WARNING + "\nselect interface: " + ENDC)
+                if response == '':
+                    Upwn.wifi_interface = interfaces[0]
+                    break
+                elif int(response) < i:
+                    Upwn.wifi_interface = interfaces[int(response)]
+                    break
+            except ValueError:
+                pass
 
-        if response == '':
-            Upwn.wifi_interface = interfaces[0]
-
-        elif response in '012345':
-            Upwn.wifi_interface = interfaces[int(response)]
-
-        else:
-            print "go away"
-            exit(1)
-
+            print "Incorrect input, try again"
         print OKGREEN + "[+]" + ENDC + " testing via " + str(Upwn.wifi_interface) + "\n"
 
     '''
@@ -154,17 +156,20 @@ class Upwn(object):
             Upwn.mac_list.append(item)
 
         listnr = 0
-        response = raw_input(WARNING + "\nselect router: " + ENDC)
+        while True:
+            try:
+                response = raw_input(WARNING + "\nselect router: " + ENDC)
+                if response == '':
+                    print OKGREEN + "[+] " + ENDC + Upwn.ap_list[listnr] + "  selected"
+                    break
+                elif int(response) < Upwn.cntaps:
+                    listnr = int(response)
+                    print OKGREEN + "[+] " + ENDC + Upwn.ap_list[listnr] + "  selected"
+                    break
+            except ValueError:
+                pass
 
-        if response == '':
-            print OKGREEN + "[+] " + ENDC + Upwn.ap_list[listnr] + " selected"
-        elif int(response) <= Upwn.cntaps:
-            listnr = int(response)
-            print OKGREEN + "[+] " + ENDC + Upwn.ap_list[listnr] + " selected"
-        else:
-            print "Your answer was bad and you should feel bad"
-            exit(1)
-
+            print "Incorrect input, try again"
         return listnr
 
     '''
@@ -177,33 +182,36 @@ class Upwn(object):
         print "[1] SAPP"
         print "[2] SBAP"
         print "[3] all (may take a while)"
-        response = raw_input(WARNING + "\nselect prefix: " + ENDC)
 
         prefix = ''
+        while True:
+            try:
+                response = raw_input(WARNING + "\nselect prefix: " + ENDC)
 
-        if response == '':
-            print OKGREEN + "[+] " + ENDC + "using SAAP\n"
-            prefix = 'SAAP'
+                if response == '':
+                    print OKGREEN + "[+] " + ENDC + "using SAAP\n"
+                    prefix = 'SAAP'
+                    break
+                elif int(response) == 0:
+                    print OKGREEN + "[+] " + ENDC + "using SAAP\n"
+                    prefix = 'SAAP'
+                    break
+                elif int(response) == 1:
+                    print OKGREEN + "[+] " + ENDC + "using SAPP\n"
+                    prefix = 'SAPP'
+                    break
+                elif int(response) == 2:
+                    print OKGREEN + "[+] " + ENDC + "using SBAP\n"
+                    prefix = 'SBAP'
+                    break
+                elif int(response) == 3:
+                    print OKGREEN + "[+] " + ENDC + "using SAAP,SAPP,SBAP\n"
+                    prefix = 'SAAP,SAPP,SBAP'
+                    break
+            except ValueError:
+                pass
 
-        elif int(response) == 0:
-            print OKGREEN + "[+] " + ENDC + "using SAAP\n"
-            prefix = 'SAAP'
-
-        elif int(response) == 1:
-            print OKGREEN + "[+] " + ENDC + "using SAPP\n"
-            prefix = 'SAPP'
-
-        elif int(response) == 2:
-            print OKGREEN + "[+] " + ENDC + "using SBAP\n"
-            prefix = 'SBAP'
-
-        elif int(response) == 3:
-            print OKGREEN + "[+] " + ENDC + "using SAAP,SAPP,SBAP\n"
-            prefix = 'SAAP,SAPP,SBAP'
-        else:
-            print "Your answer was bad and you should feel bad"
-            exit(1)
-
+            print "Incorrect input, try again"
         return prefix
 
     '''
@@ -256,7 +264,6 @@ class Upwn(object):
             for item in keys:
                 parts = item.split(',')
                 collect.append(parts[1])
-
         else:
             for item in keys:
                 parts = item.split(',')
@@ -269,17 +276,25 @@ class Upwn(object):
     '''
     @staticmethod
     def pretest(listnr, keys, ubeekeys):
-        response = raw_input(WARNING + "\nTry " + str(Upwn.allkeys) + " keys now? [" + Upwn.ap_list[listnr] +
-                             "] (Y/n): " + ENDC)
+        while True:
+            try:
+                response = raw_input(WARNING + "\nTry " + str(Upwn.allkeys) + " keys now? [" + Upwn.ap_list[listnr] +
+                                     "] (Y/n): " + ENDC)
 
-        if response in 'Yy' or '':
-            if keys and ubeekeys:
-                keys.insert(0, ubeekeys[0])
-                Upwn.keytest(listnr, keys, Upwn.wifi_interface)
-            else:
-                Upwn.keytest(listnr, keys, Upwn.wifi_interface)
-        else:
-            exit(0)
+                if response in 'Yy' or '':
+                    if keys and ubeekeys:
+                        keys.insert(0, ubeekeys[0])
+                        Upwn.keytest(listnr, keys, Upwn.wifi_interface)
+                        break
+                    else:
+                        Upwn.keytest(listnr, keys, Upwn.wifi_interface)
+                        break
+                elif response in 'Nn':
+                    exit(0)
+            except ValueError:
+                pass
+
+            print "Incorrect input, try again"
 
     '''
     NMCLI MAGIC
@@ -352,6 +367,13 @@ class Upwn(object):
             sys.exit(1)
 
     '''
+    SIGNAL HANDLING
+    '''
+    @staticmethod
+    def signal_handler(signal, frame):
+        exit(0)
+
+    '''
     DEAD
     '''
     @staticmethod
@@ -412,8 +434,9 @@ class Upwn(object):
         print ' \______ / \__|  \__|  \______/ \__|   \__|\__|       \______ /  \__|'
 
         print "\n\n"
-        print "Key to the kingdom of " + Upwn.ap_list[aplistnr] + ":\t" + key
-        print "\n\nThe castle was defeated in " + str(Upwn.whatyearisit) + " seconds"
+        print " Key to the kingdom of " + Upwn.ap_list[aplistnr] + ":\t" + key
+        print "\n\n The castle was defeated in " + str(Upwn.whatyearisit) + " seconds"
         exit(0)
 
-Upwn.menu()
+if __name__ == "__main__":
+    Upwn.menu()
