@@ -27,19 +27,25 @@ class Upwn(object):
     """
     @staticmethod
     def menu():
-        isubee = 0
-
         Upwn.checkroot()
         Upwn.banner()
         aps, macs, ubees, ghz = Upwn.getaps()
         Upwn.getsetiface()
         listnr = Upwn.setap(aps, macs)
+        isubee = Upwn.checkubee(ubees, listnr)
+        Upwn.setghz(ghz, listnr)
+        prefix = Upwn.serials()
+        ubeekeys = Upwn.gen_keys(listnr, 'UAAP')
+        keys = Upwn.gen_keys(listnr, prefix)
+        Upwn.cntkeys(isubee, ubeekeys, keys)
+        Upwn.pretest(listnr, keys, ubeekeys)
+        Upwn.deadend()
 
-        for item in ubees:
-            if item == listnr:
-                isubee = 1
-                print OKGREEN + '[+] ' + "UBEE router detected" + ENDC
-
+    '''
+    SET GHZ
+    '''
+    @staticmethod
+    def setghz(ghz, listnr):
         if int(ghz[listnr][:2]) == 24:
             Upwn.ghz = 1
             print OKGREEN + '[+] ' + "2.4 Ghz \tdetected" + ENDC
@@ -47,11 +53,22 @@ class Upwn(object):
             Upwn.ghz = 2
             print OKGREEN + '[+] ' + "5 Ghz \tdetected" + ENDC
 
-        prefix = Upwn.serials()
+    '''
+    CHECK IF AP IS UBEE
+    '''
+    @staticmethod
+    def checkubee(ubees, listnr):
+        for item in ubees:
+            if item == listnr:
+                print OKGREEN + '[+] ' + "UBEE router detected" + ENDC
+                return 1
+        return 0
 
-        ubeekeys = Upwn.gen_keys(listnr, 'UAAP')
-        keys = Upwn.gen_keys(listnr, prefix)
-
+    '''
+    COUNT AND DISPLAY FOUND KEYS
+    '''
+    @staticmethod
+    def cntkeys(isubee, ubeekeys, keys):
         print OKGREEN + "\nAvailable keys:" + ENDC
 
         if isubee:
@@ -64,9 +81,6 @@ class Upwn(object):
         for item in keys:
             print OKGREEN + '[+] ' + ENDC + item
             Upwn.allkeys += 1
-
-        Upwn.pretest(listnr, keys, ubeekeys)
-        Upwn.deadend()
 
     '''
     GET APs
