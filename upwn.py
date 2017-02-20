@@ -167,10 +167,10 @@ class Upwn(object):
     '''
     @staticmethod
     def setap(aps, macs):
+        found = {}
         if os.path.isfile('found.p'):
             p = open('found.p', 'r')
 
-            found = {}
             reverse = {}
             while True:
                 try:
@@ -190,6 +190,7 @@ class Upwn(object):
                 if found[item]:
                     key = "  KEY: " + OKGREEN + found[item] + ENDC
             except KeyError:
+                key = ''
                 pass
 
             Upwn.ap_list.append(item)
