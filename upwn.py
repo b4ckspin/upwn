@@ -167,14 +167,36 @@ class Upwn(object):
     '''
     @staticmethod
     def setap(aps, macs):
+        if os.path.isfile('found.p'):
+            p = open('found.p', 'r')
+
+            found = {}
+            reverse = {}
+            while True:
+                try:
+                    reverse[pickle.load(p)] = pickle.load(p)
+                    found = {v: k for k, v in reverse.items()}
+                except EOFError:
+                    break
+
+            p.close()
+
         print OKGREEN + "\nAvailable UPC routers:" + ENDC
         i = 0
+        key = ''
         for item in aps:
+
+            try:
+                if found[item]:
+                    key = "  KEY: " + OKGREEN + found[item] + ENDC
+            except KeyError:
+                pass
+
             Upwn.ap_list.append(item)
             if i == 0:
-                print "[" + str(i) + "] " + str(item) + " (default)"
+                print "[" + str(i) + "] " + str(item) + " (default)" + key
             else:
-                print "[" + str(i) + "] " + str(item)
+                print "[" + str(i) + "] " + str(item) + "\t\t" + key
             Upwn.cntaps += 1
             i += 1
 
@@ -344,6 +366,12 @@ class Upwn(object):
 
             if p.returncode == 0:
                 Upwn.whatyearisit += (time.time() - start_time)
+
+                f = open('found.p', 'a')
+                pickle.dump(Upwn.ap_list[Upwn.listnr], f)
+                pickle.dump(item, f)
+                f.close()
+
                 Upwn.win(aplistnr, item)
 
             sys.stdout.write(FAIL + "[X]" + ENDC)
@@ -396,23 +424,23 @@ class Upwn(object):
     '''
     @staticmethod
     def signal_handler(signal, frame):
-        f = open('pending.p', 'a')
-        pickle.dump(Upwn.ap_list[Upwn.listnr], f)
-        pickle.dump(Upwn.saap, f)
-        pickle.dump(Upwn.sapp, f)
-        pickle.dump(Upwn.sbap, f)
-        f.close()
+        # f = open('pending.p', 'a')
+        # pickle.dump(Upwn.ap_list[Upwn.listnr], f)
+        # pickle.dump(Upwn.saap, f)
+        # pickle.dump(Upwn.sapp, f)
+        # pickle.dump(Upwn.sbap, f)
+        # f.close()
 
-        p = open('pending.p', 'r')
-        ap = pickle.load(p)
-        saap = pickle.load(p)
-        sapp = pickle.load(p)
-        sbap = pickle.load(p)
+        # p = open('pending.p', 'r')
+        # ap = pickle.load(p)
+        # saap = pickle.load(p)
+        # sapp = pickle.load(p)
+        # sbap = pickle.load(p)
 
-        print ap
-        print saap
-        print sapp
-        print sbap
+        # print ap
+        # print saap
+        # print sapp
+        # print sbap
 
         exit(0)
 
