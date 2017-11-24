@@ -362,9 +362,12 @@ class Upwn(object):
 
             #p = subprocess.Popen(['nmcli', 'device', 'wifi', 'connect', Upwn.ap_list[aplistnr], 'password', item, 'ifname', interface], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
             try:
-                p = subprocess.check_output(['nmcli', 'device', 'wifi', 'connect', Upwn.ap_list[aplistnr], 'password', item, 'ifname', interface])
+                p = subprocess.check_output(['nmcli', 'device', 'wifi', 'connect', Upwn.ap_list[aplistnr], 'password', item, 'ifname', interface],
+                                            stderr=sys.stdout.fileno())
 
-                Upwn.waiter(5)
+                #print "output: " + p
+
+                Upwn.waiter(3)
                 if "successfully activated" in p:
                     Upwn.whatyearisit += (time.time() - start_time)
 
@@ -375,7 +378,12 @@ class Upwn(object):
 
                     Upwn.win(aplistnr, item)
 
-            except CalledProcessError:
+                elif "The Wi-Fi network could not be found" or "No network with" in p:
+                    sys.stdout.write(FAIL + "WiFi network not in range" + ENDC)
+                    break
+
+            except CalledProcessError as er:
+                print er.output
                 pass
 
             sys.stdout.write(FAIL + "[X]" + ENDC)
